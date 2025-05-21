@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Acode Player (Final Update - Triple Tap Unlock)</title>
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { margin: 0; background: black; color: white; font-family: sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; }
+.video-container { position: relative; width: 100%; height: 100vh; background: black; }
+video { width: 100%; height: 100%; object-fit: contain; background: black; }
+.controls { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 110px; }
+.controls button { background: transparent; border: none; color: white; cursor: pointer; }
+.controls button svg { width: 40px; height: 40px; }
+#playPauseBtn svg { width: 60px; height: 60px; }
+
+.progress-area {
+  position: absolute;
+  bottom: 50px;
+  width: 90%;
+  left: 5%;
+  height: 6px;
+  background: #2a2a2a;
+  border-radius: 0px;
+  cursor: pointer;
+  overflow: visible;
+}
+.progress {
+  background: #1E1AC1;
+  height: 100%;
+  width: 0%;
+  border-radius: 0px;
+  position: relative;
+}
+.progress::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: #3040ff; /* deep blue-light dot */
+  border-radius: 50%;
+}
+.time-indicator { position: absolute; bottom: 56px; left: 12px; color: white; font-size: 14px; }
+.fullscreen-btn { position: absolute; bottom: 56px; right: 12px; color: white; font-size: 20px; background: transparent; border: none; cursor: pointer; }
+.bottom-bar { position: absolute; bottom: 0px; width: 100%; display: flex; justify-content: space-around; align-items: center; font-size: 14px; color: #ccc; }
+.speed-btn, .comment-btn { background: transparent; border: none; color: white; cursor: pointer; }
+.pip-btn { position: absolute; top: 12px; left: 12px; color: white; font-size: 26px; background: rgba(0,0,0,0.5); border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+.settings-btn { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.5); border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+.settings-btn svg { width: 28px; height: 28px; fill: white; }
+.menu-box { position: absolute; top: 45px; right: 12px; background: white; border-radius: 6px; padding: 5px 0; display: none; flex-direction: column; width: 140px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); z-index: 10000; }
+.menu-box button { background: white; border: none; color: black; padding: 8px 12px; text-align: left; cursor: pointer; width: 100%; font-size: 14px; }
+.menu-box button:hover { background: #f0f0f0; }
+
+#workingStatus {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-family: 'Poppins', sans-serif;
+  color: #ccc;
+  font-size: 14px;
+  font-weight: 400;
+  display: none;
+  animation: fadein 0.3s ease-in-out;
+}
+
+.dots::after {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  animation: dots 1s steps(3, end) infinite;
+}
+
+@keyframes dots {
+  0% { content: ""; }
+  33% { content: "."; }
+  66% { content: ".."; }
+  100% { content: "..."; }
+}
+
+@keyframes fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest">
+function loadURL() {
+  let url = document.getElementById("videoURL").value.trim();
+  if (!url) return alert("Paste a valid link");
+
+  // If it's a master-api link with ?live= base64 string
+  if (url.includes("master-api") && url.includes("?live=")) {
+    try {
+      const base64Part = url.split("?live=")[1].split("&")[0];
+      const decoded = atob(base64Part);
+      url = decoded;
+    } catch (e) {
+      alert("Invalid encoded video URL");
+      return;
+    }
+  }
+
+  // Use HLS.js to play
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+      video.play();
+    });
+  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    video.src = url;
+    video.addEventListener("loadedmetadata", function () {
+      video.play();
+    });
+  } else {
+    alert("Your browser does not support HLS playback.");
+  }
+}
+
+
+function loadURL() {
+  let url = document.getElementById("videoURL").value.trim();
+  if (!url) return alert("Paste a valid link");
+
+  // Detect and decode master-api base64 URL
+  if (url.includes("master-api") && url.includes("?live=")) {
+    try {
+      const base64Part = url.split("?live=")[1].split("&")[0];
+      const padded = base64Part + "=".repeat((4 - base64Part.length % 4) % 4); // proper padding
+      url = atob(padded);
+    } catch (e) {
+      alert("Invalid encoded video URL");
+      return;
+    }
+  }
+
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+      video.play();
+    });
+  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    video.src = url;
+    video.addEventListener("loadedmetadata", function () {
+      video.play();
+    });
+  } else {
+    alert("Your browser does not support HLS playback.");
+  }
+}
+
+</script>
+</head>
+<body>
+
+<input type="text" id="videoURL" placeholder="Paste master-api or m3u8 URL" 
+style="position:absolute;top:60px;left:10px;z-index:10;width:60%;padding:6px;border-radius:6px;" />
+<button onclick="loadURL()" 
+style="position:absolute;top:60px;left:72%;z-index:10;padding:6px;">Play</button>
+
+<input accept="video/*" id="fileInput" style="position:absolute;top:10px;left:10px;z-index:10; color:white;" type="file"/>
+<div class="video-container" id="videoContainer">
+<video id="video" playsinline="" preload="metadata"></video><div class="video-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99999;"><span id="rewind-text" style="position: absolute; bottom: 180px; left: 180px; color: white; font-size: 28px; font-weight: bold; opacity: 0; transform: translateX(0); transition: opacity 0.3s ease, transform 0.3s ease;">-10</span><span id="forward-text" style="position: absolute; bottom: 180px; right: 180px; color: white; font-size: 28px; font-weight: bold; opacity: 0; transform: translateX(0); transition: opacity 0.3s ease, transform 0.3s ease;">+10</span></div>
+<button class="pip-btn" onclick="exitVideo()" style="top: 16px; left: 6px; position: absolute; z-index: 10; background: transparent; border: none; padding: 0;">
+<img alt="Exit" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjYSBBvA1KY8lEhmKbd4r8YKBIhLqeUWH9bUN1SAbtyQd0Rs-WOjr5HzC-ZQp9ETTqHSWLEpkFhGdRED3_RcnHN35o7g5-WuP5Aaxk8E71YnjWCYkyi7qChVa6DhMQfIp_wyaMcZoHu00aqm9m-QZwbBAeIldCiHV_NatzmXEjHVXJRRCjr7FvxiuA441m-/s304/IMG_20250519_204741-removebg-preview.png" style="height: 52px; width: auto; filter: brightness(1.1);"/>
+</button>
+<div class="menu-box" id="settingsMenu">
+<button onclick="openSpeedMenu()">Speed</button>
+<button onclick="toggleLock()">Lock Screen</button>
+</div>
+<div class="menu-box" id="speedMenu">
+<button onclick="setSpeed(1)">1x</button>
+<button onclick="setSpeed(1.5)">1.5x</button>
+<button onclick="setSpeed(2)">2x</button>
+<button onclick="setSpeed(2.5)">2.5x</button>
+<button onclick="setSpeed(3)">3x</button>
+</div>
+<button class="settings-btn" onclick="toggleSettingsMenu()" style="position: absolute; top: 12px; right: 60px; background: none; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; z-index: 10;" title="Settings">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94s-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32
+c-0.12-0.21-0.37-0.28-0.58-0.22l-2.39,0.96c-0.5-0.38-1.05-0.7-1.66-0.94L14.5,2.81C14.48,2.6,14.28,2.45,14.06,2.45h-4.12
+c-0.22,0-0.42,0.15-0.44,0.36L9.36,5.29C8.75,5.53,8.2,5.85,7.7,6.23L5.31,5.27c-0.21-0.06-0.46,0.01-0.58,0.22L2.81,8.81
+c-0.12,0.21-0.06,0.48,0.12,0.61l2.03,1.58C4.9,11.36,4.88,11.68,4.88,12s0.02,0.64,0.06,0.94l-2.03,1.58
+c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.21,0.37,0.28,0.58,0.22l2.39-0.96c0.5,0.38,1.05,0.7,1.66,0.94l0.14,2.48
+c0.02,0.21,0.22,0.36,0.44,0.36h4.12c0.22,0,0.42-0.15,0.44-0.36l0.14-2.48c0.61-0.24,1.16-0.56,1.66-0.94l2.39,0.96
+c0.21,0.06,0.46-0.01,0.58-0.22l1.92-3.32c0.12-0.21,0.06-0.48-0.12-0.61L19.14,12.94z M12,15.5c-1.93,0-3.5-1.57-3.5-3.5
+s1.57-3.5,3.5-3.5s3.5,1.57,3.5,3.5S13.93,15.5,12,15.5z"></path></svg>
+</button>
+<div class="controls" id="controls">
+<button onclick="rewind()"><img alt="Rewind 10s" height="160" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj9kpVVj7dGR2Kr0r1xzYrSyJAZ2kgVOONQQaobc8ojcdV79X84zwBFIU_7N_voLfrn_n00fmLfo7j7JuRzQdzUNM-MOY2lFsV5OLKz48KbUXodLoB8EYk7tNwkjELZ7inkWH_Ct7rfR51k5MNmcvBaAipr2xbUNmUFdvq6fzqGWg7TO9-1fpNDg3I9celd/s532/1000000280-removebg-preview.png" style="object-fit: contain; filter: brightness(10) saturate(0) contrast(1000);" width="160"/></button>
+<button id="playPauseBtn" onclick="togglePlay()">
+<svg fill="white" id="playIcon" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<polygon fill="white" points="18,15 33,24 18,33"></polygon>
+</svg>
+</button>
+<button onclick="forward()" style="margin-top: -10px;"><img alt="Forward 10s" height="160" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgRk1R6RbIfybXKbD7Bs34MvXFVbEyXJhG3YW4KX58TJ6ojiEWCr96ZgMAr78CuCZluljgO-5j1Oi4sj-RelvcN3eUvmDoyo-KNqiRUpe5VfO94lw7bMg0a02NATLviu4n7NiNJalJucU4KK1wAYO3nRZVzpKA1xCNASvGzeoD9Cuoyc7wAikaf25nbAIFi/s563/1000000283-removebg-preview.png" style="object-fit: contain; filter: brightness(10) saturate(0) contrast(1000);" width="160"/></button>
+</div>
+<div class="progress-area" id="progressArea"><div class="progress" id="progressBar"></div></div>
+<div class="time-indicator" id="timeIndicator">0:00 / 0:00</div>
+<button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
+<div class="bottom-bar" style="padding: 14px 22px;">
+<button class="comment-btn" style="background: transparent; border: none; color: white; cursor: pointer; font-weight: 900; font-size: 18px;"><img src="https://cdn-icons-png.flaticon.com/512/2462/2462719.png" style="width: 20px; height: 20px; margin-right: 6px; filter: brightness(0) invert(1);"/> Comment</button>
+<button class="notes-btn" style="background: transparent; border: none; color: white; cursor: pointer; font-weight: 900; font-size: 18px;"><img src="https://cdn-icons-png.flaticon.com/512/1828/1828915.png" style="width: 20px; height: 20px; margin-right: 6px; filter: brightness(0) invert(1);"/> Notes</button>
+<button class="ask-btn" style="background: transparent; border: none; color: white; cursor: pointer; font-weight: 900; font-size: 18px;"><img src="https://cdn-icons-png.flaticon.com/512/1828/1828970.png" style="width: 20px; height: 20px; margin-right: 6px; filter: brightness(0) invert(1);"/> Ask</button>
+<button class="mydoubt-btn" style="background: transparent; border: none; color: white; cursor: pointer; font-weight: 900; font-size: 18px;"><img src="https://cdn-icons-png.flaticon.com/512/1828/1828919.png" style="width: 20px; height: 20px; margin-right: 6px; filter: brightness(0) invert(1);"/> My doubts</button>
+<button class="speed-btn" id="speedBtn" style="background: transparent; border: none; color: white; cursor: pointer; font-weight: 900; font-size: 18px;"><img src="https://cdn-icons-png.flaticon.com/512/1828/1828925.png" style="width: 20px; height: 20px; margin-right: 6px; filter: brightness(0) invert(1);"/>Timeline</button>
+</div>
+</div>
+<script>
+const video = document.getElementById("video");
+const fileInput = document.getElementById("fileInput");
+const progress = document.getElementById("progressBar");
+const timeIndicator = document.getElementById("timeIndicator");
+const controls = document.getElementById("controls");
+const progressArea = document.getElementById("progressArea");
+const speedBtn = document.getElementById("speedBtn");
+const videoContainer = document.getElementById("videoContainer");
+
+let speeds = [1, 1.5, 2, 2.5, 3];
+let speedIndex = 0;
+let hideTimeout;
+let isLocked = false;
+
+// SHOW / HIDE CONTROLS FUNCTIONS
+function showControlsTemporarily() {
+  if (isLocked) return;
+  controls.style.display = 'flex';
+  progressArea.style.display = 'block';
+  timeIndicator.style.display = 'block';
+  document.querySelector('.bottom-bar').style.display = 'flex';
+  document.querySelector('.fullscreen-btn').style.display = 'block';
+  document.querySelector('.pip-btn').style.display = 'block';
+  document.querySelector('.settings-btn').style.display = 'block';
+  clearTimeout(hideTimeout);
+  hideTimeout = setTimeout(hideAllControls, 3000);
+}
+function hideAllControls() {
+  controls.style.display = 'none';
+  progressArea.style.display = 'none';
+  timeIndicator.style.display = 'none';
+  document.querySelector('.bottom-bar').style.display = 'none';
+  document.querySelector('.fullscreen-btn').style.display = 'none';
+  document.querySelector('.pip-btn').style.display = 'none';
+  document.querySelector('.settings-btn').style.display = 'none';
+}
+
+// LOCK & TRIPLE TAP UNLOCK FUNCTION
+function toggleLock() {
+  isLocked = !isLocked;
+  if (isLocked) {
+    hideAllControls();
+    enableTripleTapUnlock();
+  } else {
+    showControlsTemporarily();
+  }
+  closeMenus();
+}
+function enableTripleTapUnlock() {
+  let tapCount = 0;
+  function handleTap() {
+    tapCount++;
+    if (tapCount === 3) {
+      isLocked = false;
+      showControlsTemporarily();
+      videoContainer.removeEventListener('touchend', handleTap);
+      videoContainer.removeEventListener('click', handleTap);
+    }
+    setTimeout(() => { tapCount = 0; }, 600);
+  }
+  videoContainer.addEventListener('touchend', handleTap);
+  videoContainer.addEventListener('click', handleTap);
+}
+
+// REST OF SCRIPT
+fileInput.addEventListener("change", function () {
+  const file = this.files[0];
+  if (file) {
+    const url = URL.createObjectURL(file);
+    video.src = url;
+    video.load();
+    video.play();
+    showControlsTemporarily();
+  }
+});
+function togglePlay() {
+  if (video.paused) { video.play(); showPauseIcon(); } 
+  else { video.pause(); showPlayIcon(); }
+}
+function showPlayIcon() { playIcon.innerHTML = '<polygon points="18,15 33,24 18,33" fill="white"/>'; }
+function showPauseIcon() { playIcon.innerHTML = '<rect x="17" y="15" width="5" height="18" fill="white"/><rect x="26" y="15" width="5" height="18" fill="white"/>'; }
+function rewind() { video.currentTime = Math.max(video.currentTime - 10, 0); }
+function forward() { video.currentTime = Math.min(video.currentTime + 10, video.duration); }
+
+video.addEventListener("timeupdate", () => {
+  const percent = (video.currentTime / video.duration) * 100;
+  progress.style.width = percent + "%";
+  timeIndicator.textContent = formatTime(video.currentTime) + " / " + formatTime(video.duration);
+});
+
+function formatTime(seconds) {
+  if (isNaN(seconds)) return "0:00";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return h + ":" + m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0");
+  } else {
+    return m + ":" + s.toString().padStart(2, "0");
+  }
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) videoContainer.requestFullscreen();
+  else document.exitFullscreen();
+}
+speedBtn.addEventListener("click", () => {
+  speedIndex = (speedIndex + 1) % speeds.length;
+  video.playbackRate = speeds[speedIndex];
+  speedBtn.textContent = speeds[speedIndex] + "x";
+});
+function exitVideo() { alert('Exit button clicked'); }
+function toggleSettingsMenu() {
+  closeMenus();
+  document.getElementById('settingsMenu').style.display = 'flex';
+}
+function openSpeedMenu() {
+  closeMenus();
+  document.getElementById('speedMenu').style.display = 'flex';
+}
+function closeMenus() {
+  document.getElementById('settingsMenu').style.display = 'none';
+  document.getElementById('speedMenu').style.display = 'none';
+}
+function setSpeed(rate) {
+  video.playbackRate = rate;
+  speedBtn.textContent = rate + "x";
+  closeMenus();
+}
+
+// SEEK DRAG
+let isDragging = false;
+function updateSeek(clientX) {
+  const rect = progressArea.getBoundingClientRect();
+  const percent = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+  video.currentTime = percent * video.duration;
+}
+progressArea.addEventListener("mousedown", (e) => { isDragging = true; updateSeek(e.clientX); });
+document.addEventListener("mousemove", (e) => { if (isDragging) updateSeek(e.clientX); });
+document.addEventListener("mouseup", () => { isDragging = false; });
+progressArea.addEventListener("touchstart", (e) => { isDragging = true; updateSeek(e.touches[0].clientX); });
+document.addEventListener("touchmove", (e) => { if (isDragging) updateSeek(e.touches[0].clientX); });
+document.addEventListener("touchend", () => { isDragging = false; });
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.settings-btn') && !e.target.closest('.menu-box')) closeMenus();
+});
+videoContainer.addEventListener('click', showControlsTemporarily);
+videoContainer.addEventListener('touchstart', showControlsTemporarily);
+
+function loadURL() {
+  let url = document.getElementById("videoURL").value.trim();
+  if (!url) return alert("Paste a valid link");
+
+  // Detect and decode master-api base64 URL
+  if (url.includes("master-api") && url.includes("?live=")) {
+    try {
+      const base64Part = url.split("?live=")[1].split("&")[0];
+      const padded = base64Part + "=".repeat((4 - base64Part.length % 4) % 4); // proper padding
+      url = atob(padded);
+    } catch (e) {
+      alert("Invalid encoded video URL");
+      return;
+    }
+  }
+
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+      video.play();
+    });
+  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    video.src = url;
+    video.addEventListener("loadedmetadata", function () {
+      video.play();
+    });
+  } else {
+    alert("Your browser does not support HLS playback.");
+  }
+}
+
+</script>
+<span id="rewind-text" style="position: absolute; bottom: 180px; left: 160px; color: white; font-size: 22px; font-weight: bold; opacity: 0; transform: translateX(0); transition: transform 0.3s ease, opacity 0.3s ease; z-index: 9999;">-10</span><span id="forward-text" style="position: absolute; bottom: 180px; right: 160px; color: white; font-size: 22px; font-weight: bold; opacity: 0; transform: translateX(0); transition: transform 0.3s ease, opacity 0.3s ease; z-index: 9999;">+10</span><script>
+function showRewindText() {
+  const el = document.getElementById("rewind-text");
+  el.style.opacity = "1";
+  el.style.transform = "translateX(-50px)";
+  setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transform = "translateX(0)";
+  }, 500);
+}
+function showForwardText() {
+  const el = document.getElementById("forward-text");
+  el.style.opacity = "1";
+  el.style.transform = "translateX(50px)";
+  setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transform = "translateX(0)";
+  }, 500);
+}
+document.querySelector('button[onclick="rewind()"]')?.addEventListener('click', showRewindText);
+document.querySelector('button[onclick="forward()"]')?.addEventListener('click', showForwardText);
+
+function loadURL() {
+  let url = document.getElementById("videoURL").value.trim();
+  if (!url) return alert("Paste a valid link");
+
+  // Detect and decode master-api base64 URL
+  if (url.includes("master-api") && url.includes("?live=")) {
+    try {
+      const base64Part = url.split("?live=")[1].split("&")[0];
+      const padded = base64Part + "=".repeat((4 - base64Part.length % 4) % 4); // proper padding
+      url = atob(padded);
+    } catch (e) {
+      alert("Invalid encoded video URL");
+      return;
+    }
+  }
+
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+      video.play();
+    });
+  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    video.src = url;
+    video.addEventListener("loadedmetadata", function () {
+      video.play();
+    });
+  } else {
+    alert("Your browser does not support HLS playback.");
+  }
+}
+
+</script><script>
+const video = document.querySelector("video");
+const progressArea = document.querySelector(".progress-area");
+const progressBar = document.querySelector(".progress-bar");
+
+let isDragging = false;
+
+progressArea.addEventListener("mousedown", (e) => {
+  isDragging = true;
+  seekTo(e.offsetX);
+});
+document.addEventListener("mousemove", (e) => {
+  if (isDragging) seekTo(e.offsetX, true);
+});
+document.addEventListener("mouseup", () => isDragging = false);
+
+progressArea.addEventListener("touchstart", (e) => {
+  isDragging = true;
+  const touch = e.touches[0];
+  const rect = progressArea.getBoundingClientRect();
+  seekTo(touch.clientX - rect.left);
+});
+document.addEventListener("touchmove", (e) => {
+  if (isDragging) {
+    const touch = e.touches[0];
+    const rect = progressArea.getBoundingClientRect();
+    seekTo(touch.clientX - rect.left, true);
+  }
+});
+document.addEventListener("touchend", () => isDragging = false);
+
+function seekTo(offsetX, isLive = false) {
+  const rect = progressArea.getBoundingClientRect();
+  const percent = Math.min(Math.max(offsetX / rect.width, 0), 1);
+  video.currentTime = percent * video.duration;
+  progressBar.style.width = `${percent * 100}%`;
+}
+
+function loadURL() {
+  let url = document.getElementById("videoURL").value.trim();
+  if (!url) return alert("Paste a valid link");
+
+  // Detect and decode master-api base64 URL
+  if (url.includes("master-api") && url.includes("?live=")) {
+    try {
+      const base64Part = url.split("?live=")[1].split("&")[0];
+      const padded = base64Part + "=".repeat((4 - base64Part.length % 4) % 4); // proper padding
+      url = atob(padded);
+    } catch (e) {
+      alert("Invalid encoded video URL");
+      return;
+    }
+  }
+
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+      video.play();
+    });
+  } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    video.src = url;
+    video.addEventListener("loadedmetadata", function () {
+      video.play();
+    });
+  } else {
+    alert("Your browser does not support HLS playback.");
+  }
+}
+
+</script>
+<div id="workingStatus">Working<span class="dots">...</span></div>
+</body>
+</html>
